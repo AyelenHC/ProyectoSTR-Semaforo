@@ -1,0 +1,60 @@
+MODULE semaforo(cross, id, TM, TYellow, TGreen)
+VAR
+    state : {red, yellow, green};
+    time : 0..TM;
+    demand : boolean;
+ASSIGN
+init(state) := case
+    cross =  id : green;
+    TRUE: red;
+esac;
+init(time) := case
+    cross = id : 0;
+    cross != id : TM;
+esac;
+next(state) := case
+    state = green & cross = id  : yellow;
+    state = yellow & cross = id  : red;
+    state = red & next(cross) = id : green;
+    TRUE: red;
+esac;
+
+next(time) := case
+    next(state) = green : 0;
+    next(state) = yellow : TGreen;
+    next(state) = red : TM;
+esac;
+
+
+MODULE main
+VAR
+semaforo_NS : semaforo(cross, ns, TM, TYellow, TGreen);
+semaforo_OE : semaforo(cross, oe, TM, TYellow, TGreen);
+cross : {ns, oe};
+
+ASSIGN
+init(cross) := {ns, oe};
+next(cross) := case
+    cross = ns & semaforo_NS.state = yellow : oe;
+    cross = oe & semaforo_OE.state = yellow : ns;
+    TRUE : cross;
+esac;
+
+DEFINE
+TYellow := 3;
+TGreen := 10;
+TM := TYellow + TGreen;  -- El tiempo total del ciclo
+
+-- φ1: Los semáforos de direcciones cruzadas no pueden estar en green simult´aneamente.
+LTLSPEC NAME ambosSemaforosIguales := G(semaforo_NS.state != semaforo_OE.state); --verifica que ambos semaforos no sean rojos
+
+-- φ2: El yellow debe durar exactamente TYellow y no debe saltarse.
+LTLSPEC NAME spec2 := G(semaforo_NS.time = TGreen -> X(semaforo_NS.time = TM) & G (semaforo_NS.state = green -> X(semaforo_NS.state = yellow))) & G(semaforo_OE.time = TGreen -> X(semaforo_OE.time = TM) & G (semaforo_OE.state = green -> X(semaforo_OE.state = yellow)));
+
+LTLSPEC NAME spec2_2 := G(semaforo_NS.state = yellow -> semaforo_NS.time = TGreen & X(semaforo_NS.state = red -> semaforo_NS.time = TM)); --Sabemos que TM es TYellow -- φ4: El tiempo de green no debe exceder un m´aximo Tmax (ej. 30 segundos).
+
+-- Q4
+LTLSPEC NAME noExcede := G(TGreen < TM);
+
+-- φ5: Siempre es posible que algun semaforo este en green
+CTLSPEC NAME posibleVerde := AG( EF (semaforo_NS.state = green | semaforo_OE.state = green));
