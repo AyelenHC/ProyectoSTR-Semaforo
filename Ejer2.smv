@@ -1,60 +1,108 @@
-MODULE semaforo(cross, id, TM, TYellow, TGreen)
+MODULE semaforo(cross, id, TM, TGreenMin, TYellow, TGreenMax, otra_demanda)
 VAR
     state : {red, yellow, green};
     time : 0..TM;
     demand : boolean;
+    timeyellow : 0..TYellow;
 ASSIGN
+
 init(state) := case
     cross =  id : green;
     TRUE: red;
 esac;
+
 init(time) := case
     cross = id : 0;
     cross != id : TM;
 esac;
+
+init(timeyellow) := 0;
+
+-- next(state) := case
+--     next(time) < TGreenMin & cross = id: green; -- Si el tiempo es menos que el tiempo minimo de verde y es su turno, que siga en verde
+--     next(time) < TGreenMax & demand & cross = id & state = green: green; --Si hay demanda y  aun no llega al tiempo maximo, que siga siendo verde
+--     state = yellow & timeyellow = TYellow : red; --Si ya pasaron los 3 segundos de amarillo entonces pase a rojo
+--     next(time) = TGreenMax & cross = id : yellow; -- Si llega al TGreenMax, pase a amarillo
+--     timeyellow < TYellow : yellow; --Siempre que timeyellow este por debajo de 3 entonces que siga en amarillo
+--     TRUE: red; 
+-- esac;
+
 next(state) := case
-    state = green & cross = id  : yellow;
-    state = yellow & cross = id  : red;
-    state = red & next(cross) = id : green;
-    TRUE: red;
+    cross != id : red; --Cuando no sea el turno del semaforo que se mantenga en rojo
+
+    state = green & time >= TGreenMax : yellow; -- Si esta en verde y pasa el tiempo maximo, entonces que pase a amarillo
+    state = green & time >= TGreenMin & !demand & otra_demanda : yellow; -- Corte por extensión inteligente
+
+    -- 3. Mantener verde si no hay motivo de corte
+    state = green : green; -- 
+
+    -- 4. Lógica para pasar de amarillo a rojo
+    state = yellow & timeyellow = TYellow : red; 
+
+    -- 5. Mantener amarillo si el tiempo aún no se cumple
+    state = yellow : yellow;
+
+    -- 6. Si estaba en rojo y ahora es mi turno, paso a verde
+    cross = id & state = red : green; 
+
+    TRUE : red;
 esac;
+--file Ejer2.smv: line 59: variable is assigned more than once: semaforo_NS.time
 
 next(time) := case
-    next(state) = green : 0;
-    next(state) = yellow : TGreen;
-    next(state) = red : TM;
+    cross != id : TM;
+    time = TM: 0;
+    time < TM: time + 1;
 esac;
 
+next(demand) := case 
+    next(state) = green : {TRUE, FALSE}; --Si esta en verde, entonces puede seguir la demanda o apagarse
+    demand = FALSE : {TRUE, FALSE}; --Si no hay demanda, en cualquier momento puede llegar autos o seguir sin demanda
+    TRUE : TRUE; --En otro caso, la demanda es true y se mantendra asi hasta que el semaforo este en verde
+esac;
+
+next(timeyellow) := case
+    state = yellow & timeyellow < TYellow : timeyellow + 1;
+    TRUE : 0;
+esac;
 
 MODULE main
 VAR
-semaforo_NS : semaforo(cross, ns, TM, TYellow, TGreen);
-semaforo_OE : semaforo(cross, oe, TM, TYellow, TGreen);
-cross : {ns, oe};
-
+    cross : {ns, oe};
+    semaforo_NS : semaforo(cross, ns, TM, TGreenMin, TYellow, TGreenMax, semaforo_OE.demand);
+    semaforo_OE : semaforo(cross, oe, TM, TGreenMin, TYellow, TGreenMax, semaforo_NS.demand);
+    
 ASSIGN
-init(cross) := {ns, oe};
-next(cross) := case
-    cross = ns & semaforo_NS.state = yellow : oe;
-    cross = oe & semaforo_OE.state = yellow : ns;
-    TRUE : cross;
-esac;
-
+    
+    init(cross) := {ns, oe};
+    next(cross) := case
+        cross = ns & semaforo_NS.state = yellow & semaforo_NS.timeyellow = TYellow : oe;
+        cross = oe & semaforo_OE.state = yellow & semaforo_OE.timeyellow = TYellow : ns;
+        TRUE : cross;
+    esac;
 DEFINE
-TYellow := 3;
-TGreen := 10;
-TM := TYellow + TGreen;  -- El tiempo total del ciclo
+    TYellow := 3; 
+    TGreenMax := 15;
+    TGreenMin := 10;
+    TM := TYellow + TGreenMax;  -- El tiempo total del ciclo
 
--- φ1: Los semáforos de direcciones cruzadas no pueden estar en green simult´aneamente.
-LTLSPEC NAME ambosSemaforosIguales := G(semaforo_NS.state != semaforo_OE.state); --verifica que ambos semaforos no sean rojos
+-- φ1: Los semáforos de direcciones cruzadas no pueden estar en green simultáneamente.
+LTLSPEC NAME ambosSemaforosIguales := G(semaforo_NS.state != semaforo_OE.state); -- Verifica que ambos semaforos no sean rojos
 
 -- φ2: El yellow debe durar exactamente TYellow y no debe saltarse.
-LTLSPEC NAME spec2 := G(semaforo_NS.time = TGreen -> X(semaforo_NS.time = TM) & G (semaforo_NS.state = green -> X(semaforo_NS.state = yellow))) & G(semaforo_OE.time = TGreen -> X(semaforo_OE.time = TM) & G (semaforo_OE.state = green -> X(semaforo_OE.state = yellow)));
+-- LTLSPEC NAME spec2 := G((semaforo_NS.time >= TGreenMin & semaforo_NS.state = yellow) -> X(semaforo_NS.time <= TM & semaforo_NS.time >= (TYellow + TGreenMin))) | G((semaforo_NS.time >= TGreenMin & semaforo_NS.state = yellow) -> X(semaforo_NS.time <= TM & semaforo_NS.time >= (TYellow + TGreenMax)))
 
-LTLSPEC NAME spec2_2 := G(semaforo_NS.state = yellow -> semaforo_NS.time = TGreen & X(semaforo_NS.state = red -> semaforo_NS.time = TM)); --Sabemos que TM es TYellow -- φ4: El tiempo de green no debe exceder un m´aximo Tmax (ej. 30 segundos).
+LTLSPEC NAME spec2 := G(F(semaforo_NS.timeyellow = TYellow) & F(semaforo_OE.timeyellow = TYellow))
 
--- Q4
-LTLSPEC NAME noExcede := G(TGreen < TM);
+-- φ3: Si hay vehículos esperando en una dirección y el semáforo está rojo, eventualmente se pondrá verde.
+LTLSPEC NAME demandaYRojo := G((semaforo_NS.demand & semaforo_NS.state = red -> F (semaforo_NS.state = green)) & (semaforo_OE.demand & semaforo_OE.state = red -> F (semaforo_OE.state = green)));
+
+-- φ4: El tiempo de verde no debe exceder un maximo Tmax (ej. 30 segundos).
+LTLSPEC NAME noExcede := G(!(semaforo_NS.state = green &  semaforo_NS.time = TGreenMax) & !(semaforo_OE.state = green &  semaforo_OE.time = TGreenMax)); 
 
 -- φ5: Siempre es posible que algun semaforo este en green
 CTLSPEC NAME posibleVerde := AG( EF (semaforo_NS.state = green | semaforo_OE.state = green));
+
+-- Prueba
+-- LTLSPEC NAME secuencia := G( (semaforo_NS.state = green & semaforo_OE.state = red & semaforo_NS.demand = FALSE) -> X(semaforo_NS.state = yellow & semaforo_OE.state = red) & X(X(semaforo_NS.state = red & semaforo_OE.state = green)) ) -- secuencia sin demanda
+-- LTLSPEC NAME secuenciaConDemanda := G ((semaforo_NS.state = green & semaforo_OE.state = red & semaforo_NS.demand = FALSE) -> X)
