@@ -1,0 +1,138 @@
+-- Para violar las propiedades 1, 2 y 3
+MODULE semaforo(cross, id, TM, TGreenMin, TYellow, TGreenMax, walker_press)
+VAR
+    state : {red, yellow, green};
+    time : 0..TM;
+    demand : boolean;
+    timeyellow : 0..TYellow;
+
+ASSIGN
+init(state) := case
+    cross =  id : green;
+    TRUE: red;
+esac;
+
+init(time) := case
+    cross = id : 0;
+    cross != id : TM;
+esac;
+
+init(timeyellow) := 0;
+
+next(state) := case
+    state = green & walker_press : yellow; --Si esta en verde y se aprieta el boton peatonan entonces que pase automaticamente amarillo
+    state = red & walker_press : red; --Si esta en rojo y se apreto el boton entonces que se mantenga el semaforo en rojo
+    next(cross) = id: case --Si el semaforo tiene el turno
+        state = green : case --Si actualmente esta en verde
+            next(time) < TGreenMin : green; --Que siga en verde si aun no ha pasado un tiempo minimo
+            demand & next(time) < TGreenMax : green; --Si paso el tiempo minimo entonces que siga siempre y cuando no pase de un tiempo maximo 
+            TRUE : yellow; --Si llego al tiempo maximo o no hay demanda, entonces que pase a amarillo
+        esac;
+        state = yellow : case --Si actualmente esta en amarillo
+            next(timeyellow) < TYellow : yellow; --Que siga en amarillo mientras no haya superado los 3 segundos
+            TRUE: red; --Una vez superado llegue a los 3 segundos, entonces que pase a rojo
+        esac;
+        state = red : green; --Si es su turno y esta rojo, entonces significa que ahora debe cambiar a verde
+    esac;
+    TRUE : red; --Si no es su turno, entonces debe mantenerse en rojo
+esac;
+
+next(time) := case
+    next(cross) = id : case --Si es su turno
+        state = red: 0; --Si esta en rojo, eso significa que hay que empezar el semaforo
+        time < TM: time + 1; --En otro caso, hay que incrementarlo
+        TRUE : TM; --Cuando llegue a TM, que se mantenga ahi
+    esac;
+    TRUE: TM; --Si no es su turno, entonces dejarlo en el tiempo maximo
+esac;
+
+next(demand) := case 
+    next(state) = green | next(state) = yellow : {TRUE, FALSE}; --Si esta en verde o en amarillo, entonces puede seguir la demanda o apagarse
+    demand = FALSE : {TRUE, FALSE}; --Si no hay demanda, en cualquier momento puede llegar autos o seguir sin demanda
+    TRUE : TRUE; --Si el siguiente estado no es verde y hay demanda, entonces esta no va a desaparecer
+esac;
+
+next(timeyellow) := case
+    state = yellow & timeyellow < TYellow : timeyellow + 1;
+    TRUE : 0;
+esac;
+
+MODULE main
+VAR
+    cross : {ns, oe}; --Variable que indica de que semaforo es el turno
+    semaforo_NS : semaforo(cross, ns, TM, TGreenMin, TYellow, TGreenMax, walker_press); --Modulo del semaforo NS
+    semaforo_OE : semaforo(cross, oe, TM, TGreenMin, TYellow, TGreenMax, walker_press); --Modulo del semaforo OE
+    t_car_arrival : 0..L; --Tiempo maximo que lleva esperando un auto
+    t_walker_cross : 0..P; --Tiempo que llevan los dos semaforos en rojo
+    walker_press : boolean; --Variable que controla si se apreto el boton peatonal
+
+ASSIGN
+    init(cross) := {ns, oe};
+    init(t_car_arrival) := 0;
+    init(t_walker_cross) := 0;
+    init(walker_press) := FALSE;
+    
+    -- Aqui se introdujo error, modificando el proximo estado para el cruce, haciendo que den todas las especificaciones faltas, excepto \phi_5
+    next(cross) := case
+        cross = ns: oe; --CAMBIO: Siempre estan alternando los semaforos
+        cross = oe: ns; --CAMBIO: Siempre estan alternando los semaforos
+        TRUE : cross;
+    esac;
+    next(t_car_arrival) := case
+        
+        cross = ns : case
+            next(cross) = oe : 0;
+            t_car_arrival = L : L; -- Restriccion impuesta para que el sistema (NuSMV) entienda que la variable no supera L
+            semaforo_OE.demand : t_car_arrival + 1;
+            TRUE: 0; 
+        esac;
+        
+        cross = oe: case
+            next(cross) = ns : 0;
+            t_car_arrival = L : L; -- Restriccion impuesta para que el sistema (NuSMV) entienda que la variable no supera L
+            semaforo_NS.demand : t_car_arrival + 1;
+            TRUE: 0;
+        esac;
+    esac;
+
+    next(walker_press) := case
+        !walker_press : {TRUE, FALSE}; -- Si el boton no esta presionado, puede pasar a estar presionado o no en el siguiente estado
+        next(t_walker_cross) = P: FALSE; -- Si pasaron los 10 seg en el que ambos semaforos estaban en rojo, entonces se le quita el paso al peaton
+        TRUE: TRUE;
+    esac;
+
+    next(t_walker_cross) := case 
+        t_walker_cross = P : P; -- Restriccion impuesta para que el sistema (NuSMV) entienda que la variable no supera P
+        walker_press & semaforo_NS.state = semaforo_OE.state : t_walker_cross + 1;
+        TRUE : 0;
+    esac;
+    
+DEFINE
+    TYellow := 3; --Tiempo que estara en amarillo el semaforo
+    TGreenMax := 15; -- Tiempo maximo del semaforo verde si hay demanda
+    TGreenMin := 10; -- Tiempo minimo del semaforo verde con o sin demanda
+    TM := TYellow + TGreenMax;  -- El tiempo total del ciclo
+    L := 21; -- Tiempo que no debe exceder un auto en espera
+    P := 10; -- Tiempo que tienen los peatones para pasar
+
+
+-- φ1: Los semáforos de direcciones cruzadas no pueden estar en green simultáneamente.
+LTLSPEC NAME ambosSemaforosIguales := G(semaforo_NS.state = green & semaforo_OE.state = green);
+
+-- φ2: El yellow debe durar exactamente TYellow y no debe saltarse.
+-- LTLSPEC NAME spec2 := G((semaforo_NS.time >= TGreenMin & semaforo_NS.state = yellow) -> X(semaforo_NS.time <= TM & semaforo_NS.time >= (TYellow + TGreenMin))) | G((semaforo_NS.time >= TGreenMin & semaforo_NS.state = yellow) -> X(semaforo_NS.time <= TM & semaforo_NS.time >= (TYellow + TGreenMax)))
+LTLSPEC NAME spec2 := G(F(semaforo_NS.timeyellow = TYellow) & F(semaforo_OE.timeyellow = TYellow))
+
+-- φ3: Si hay vehículos esperando en una dirección y el semáforo está rojo, eventualmente se pondrá verde.
+LTLSPEC NAME demandaYRojo := G((semaforo_NS.demand & semaforo_NS.state = red -> F (semaforo_NS.state = green)) & (semaforo_OE.demand & semaforo_OE.state = red -> F (semaforo_OE.state = green)));
+
+-- φ4: El tiempo de verde no debe exceder un maximo Tmax (ej. 30 segundos).
+LTLSPEC NAME noExcede := G(!(semaforo_NS.state = green &  semaforo_NS.time = TGreenMax) & !(semaforo_OE.state = green &  semaforo_OE.time = TGreenMax)); 
+
+-- φ5: Siempre es posible que algun semaforo este en green
+CTLSPEC NAME posibleVerde := AG( EF (semaforo_NS.state = green | semaforo_OE.state = green));
+
+-- El tiempo de espera nunca debe exceder 20 ticks
+CTLSPEC NAME tiempoEspMenor20 := AG (t_car_arrival <= 20);
+
+-- 

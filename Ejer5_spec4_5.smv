@@ -1,3 +1,4 @@
+-- Para violar las propiedades 4 y 5
 MODULE semaforo(cross, id, TM, TGreenMin, TYellow, TGreenMax, walker_press)
 VAR
     state : {red, yellow, green};
@@ -23,15 +24,15 @@ next(state) := case
     state = red & walker_press : red; --Si esta en rojo y se apreto el boton entonces que se mantenga el semaforo en rojo
     next(cross) = id: case --Si el semaforo tiene el turno
         state = green : case --Si actualmente esta en verde
-            next(time) < TGreenMin : green; --Que siga en verde si aun no ha pasado un tiempo minimo
-            demand & next(time) < TGreenMax : green; --Si paso el tiempo minimo entonces que siga siempre y cuando no pase de un tiempo maximo 
+            next(time) < TGreenMin : green; --CAMBIO: Que siga en verde si aun no ha pasado un tiempo minimo
+            demand & next(time) < TM+1: green; --Ahora esta en verde mas de TM ticks
             TRUE : yellow; --Si llego al tiempo maximo o no hay demanda, entonces que pase a amarillo
         esac;
         state = yellow : case --Si actualmente esta en amarillo
             next(timeyellow) < TYellow : yellow; --Que siga en amarillo mientras no haya superado los 3 segundos
             TRUE: red; --Una vez superado llegue a los 3 segundos, entonces que pase a rojo
         esac;
-        state = red : green; --Si es su turno y esta rojo, entonces significa que ahora debe cambiar a verde
+        state = red : red; --CAMBIO: Si esta en rojo nunca cambiara a verde
     esac;
     TRUE : red; --Si no es su turno, entonces debe mantenerse en rojo
 esac;
@@ -132,5 +133,3 @@ CTLSPEC NAME posibleVerde := AG( EF (semaforo_NS.state = green | semaforo_OE.sta
 
 -- El tiempo de espera nunca debe exceder 20 ticks
 CTLSPEC NAME tiempoEspMenor20 := AG (t_car_arrival <= 20);
-
--- 
