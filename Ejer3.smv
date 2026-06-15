@@ -44,8 +44,7 @@ next(time) := case
 esac;
 
 next(demand) := case 
-
-    next(state) = green  | next(state) = yellow : {TRUE, FALSE}; --Si esta en verde o amarillo, entonces puede seguir la demanda o apagarse
+    next(state) = green | next(state) = yellow : {TRUE, FALSE}; --Si esta en verde o en amarillo, entonces puede seguir la demanda o apagarse
     demand = FALSE : {TRUE, FALSE}; --Si no hay demanda, en cualquier momento puede llegar autos o seguir sin demanda
     TRUE : TRUE; --Si el siguiente estado no es verde y hay demanda, entonces esta no va a desaparecer
 esac;
@@ -60,19 +59,40 @@ VAR
     cross : {ns, oe};
     semaforo_NS : semaforo(cross, ns, TM, TGreenMin, TYellow,TGreenMax);
     semaforo_OE : semaforo(cross, oe, TM, TGreenMin, TYellow,TGreenMax);
+    t_car_arrival : 0..L;
     
 ASSIGN
     init(cross) := {ns, oe};
+    init(t_car_arrival) := 0;
     next(cross) := case
         cross = ns & semaforo_NS.state = yellow & next(semaforo_NS.timeyellow) = TYellow : oe; --Si el semaforo esta en amarillo y ya termino su tiempo, ahora le toca empezar al otro semaforo
         cross = oe & semaforo_OE.state = yellow & next(semaforo_OE.timeyellow) = TYellow : ns; --Si el semaforo esta en amarillo y ya termino su tiempo, ahora le toca empezar al otro semaforo
         TRUE : cross;
     esac;
+    next(t_car_arrival) := case
+        
+        cross = ns : case
+            next(cross) = oe : 0;
+            t_car_arrival = L : L; -- Esto le indica al compilador (NuSMV) que la variable no supera el limite
+            semaforo_OE.demand : t_car_arrival + 1;
+            TRUE: 0; 
+        esac;
+        
+        cross = oe: case
+            next(cross) = ns : 0;
+            t_car_arrival = L : L; -- Esto le indica al compilador (NuSMV) que la variable no supera el limite
+            semaforo_NS.demand : t_car_arrival + 1;
+            TRUE: 0;
+        esac;
+        
+    esac;
+    
 DEFINE
     TYellow := 3; 
     TGreenMax := 15;
     TGreenMin := 10;
     TM := TYellow + TGreenMax;  -- El tiempo total del ciclo
+    L := 21;
 
 -- φ1: Los semáforos de direcciones cruzadas no pueden estar en green simultáneamente.
 LTLSPEC NAME ambosSemaforosIguales := G(semaforo_NS.state != semaforo_OE.state); -- Verifica que ambos semaforos no sean rojos
@@ -89,3 +109,6 @@ LTLSPEC NAME noExcede := G(!(semaforo_NS.state = green &  semaforo_NS.time = TGr
 
 -- φ5: Siempre es posible que algun semaforo este en green
 CTLSPEC NAME posibleVerde := AG( EF (semaforo_NS.state = green | semaforo_OE.state = green));
+
+-- El tiempo de espera nunca debe exceder 20 ticks
+CTLSPEC NAME tiempoEspMenor20 := AG (t_car_arrival <= 20);

@@ -44,7 +44,7 @@ TYellow := 3;
 TGreen := 10;
 TM := TYellow + TGreen;  -- El tiempo total del ciclo
 
--- φ1: Los semáforos de direcciones cruzadas no pueden estar en green simult´aneamente.
+-- φ1: Los semáforos de direcciones cruzadas no pueden estar en green simultáneamente.
 LTLSPEC NAME ambosSemaforosIguales := G(semaforo_NS.state != semaforo_OE.state); --verifica que ambos semaforos no sean rojos
 
 -- φ2: El yellow debe durar exactamente TYellow y no debe saltarse.
