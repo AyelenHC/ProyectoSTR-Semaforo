@@ -86,6 +86,14 @@ Para resolver esta consigna, además de las suposiciones generales para todos lo
 
 %--------------------------------------------------------------------
 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../resources/resultado_ej1.png}
+    \caption{Resultados de verificación para el Ejercicio 1.}
+\end{figure}
+
+
 \section*{Ejercicio 2}
 
 \textit{\textbf{Consigna:} Modificar el modelo para que el semáforo se mantenga en verde si hay demanda en su mismo sentido, hasta un máximo de $T_{max} = 15\ ticks$. Si no hay demanda en el sentido actual pero sí en el otro, el cambio de fase ocurre inmediatamente (respetando el amarillo). Verificar las propiedades nuevamente y si alguna falla, explicar por qué.}
@@ -195,6 +203,14 @@ CTLSPEC NAME posibleVerde := AG( EF (semaforo_NS.state = green | semaforo_OE.sta
 \end{lstlisting}
 
 %--------------------------------------------------------------------
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../resources/resultado_ej2.png}
+    \caption{Resultados de verificación para el Ejercicio 2.}
+\end{figure}
+
 
 \section*{Ejercicio 3}
 \textit{\textbf{Consigna:} Modificar el modelo para poder verificar que el tiempo máximo de espera para un vehículo (desde que llega hasta que obtiene verde) no supere L = 20 ticks. Especificar esta propiedad en CTL y verificarla.}
@@ -324,6 +340,14 @@ CTLSPEC NAME tiempoEspMenor20 := AG (t_car_arrival <= 20);
 \end{lstlisting}
 
 %--------------------------------------------------------------------
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../resources/resultado_ej3.png}
+    \caption{Resultados de verificación para el Ejercicio 3.}
+\end{figure}
+
 
 \section*{Ejercicio 4}
 
@@ -473,6 +497,24 @@ CTLSPEC NAME tiempoEspMenor20 := AG (t_car_arrival <= 20);
 \end{lstlisting}
 
 %--------------------------------------------------------------------
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../resources/resultado_ej4_1.png}
+    \caption{Resultados de verificación para el Ejercicio 4 (Parte 1).}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{../resources/resultado_ej4_2.png}
+    \caption{Resultados de verificación para el Ejercicio 4 (Parte 2).}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../resources/resultado_ej4_3.png}
+    \caption{Resultados de verificación para el Ejercicio 4 (Parte 3).}
+\end{figure}
+
 
 \section*{Ejercicio 5}
 \textit{\textbf{Consigna:} Modificar el modelo para introducir errores deliberados que violen cada una de las propiedades establecidas. Analizar el contraejemplo generado por NuSMV.}
@@ -764,6 +806,49 @@ CTLSPEC NAME tiempoEspMenor20 := AG (t_car_arrival <= 20);
 
 %--------------------------------------------------------------------
 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../resources/resultado_5_1.png}
+    \caption{Contraejemplo para la especificación 1.}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../resources/resultado_5_2.png}
+    \caption{Contraejemplo para la especificación 2.}
+\end{figure}
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=1\textwidth]{../resources/resultado_5_3.png}
+%     \caption{Contraejemplo para la especificación 3.}
+% \end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../resources/resultado_5_4.png}
+    \caption{Contraejemplo para la especificación 4.}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../resources/resultado_5_5.png}
+    \caption{Contraejemplo para la especificación 5.}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../resources/resultado_5_6.png}
+    \caption{Contraejemplo para la especificación 6.}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../resources/resultado_5_7.png}
+    \caption{Contraejemplo para la especificación 7.}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../resources/resultado_5_8.png}
+    \caption{Contraejemplo para la especificación 8.}
+\end{figure}
+
+
 \section*{Ejercicio 6}
 
 \textit{\textbf{Consigna:} Para el modelo final (con demanda y botón peatonal), medir el tiempo de verificación y el número de estados alcanzables usando el comando print reachable states en NuSMV. Comparar con el modelo cíclico fijo. Discutir la complejidad del espacio de estados.}
@@ -785,24 +870,6 @@ def evenSummation(x):
     return evenSum
 \end{lstlisting}
 
-% ######################################################################
-% system diameter: 2
-% reachable states: 4 (2^2) out of 3528 (2^11.7846)
-% ######################################################################
-
-% El resultado que muestra el comando print_reachable_states, indica que hay 4 estados alcanzables y que hay 3528 combinaciones posibles con la especificación del modelo inicial. El system diameter = 2, indica que todo estado alcanzable desde el estado inicial puede alcanzarse en a lo sumo 2 transiciones.
-
-% Esto es debido a la variable cross, ya que se encarga de realizar el cambio entre las direcciones ns y oe, solo teniendo en cuenta si el semáforo que tiene el paso llego al estado amarillo. Estableciendo que en el próximo estado se le otorga el paso al otro semáforo. Esto genera un ciclo predecible, que genera pocas configuraciones de estados durante la ejecución.
-
-% Para el modelo Final:
-
-% ######################################################################
-% system diameter: 34
-% reachable states: 13596 (2^13.7309) out of 2.01282e+08 (2^27.5846)
-% ######################################################################
-
-% El resultado indica que hay 13596 estado alcanzables y que hay 2.01282e+08 (es decir, 201.282.000) combinaciones posibles con la especificación del modelo final. El system diameter = 34, indica que todo estado alcanzable desde el estado inicial puede alcanzarse en a lo sumo 34 transiciones.
-
 
 %--------------------------------------------------------------------
 
@@ -816,7 +883,21 @@ Por ejemplo, un cajero automático solo puede expulsar dinero si el usuario ingr
 
 \subsubsection*{Explique la diferencia entre CTL y LTL.}
 
-La diferencia entre CTL y LTL, es que el primero se define para árboles de ejecución y el último se define para caminos de ejecución. Además, el LTL permite expresar cómo evolucionan los estados a lo largo del tiempo en una ejecución y el CTL permite combinar cuantificadores de camino con operadores temporales.
+La diferencia entre CTL y LTL, es que el primero se define para árboles de ejecución y el último se define para caminos de ejecución.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{../resources/LTL.png}
+    \caption{LTL}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{../resources/CTL.png}
+    \caption{CTL}
+\end{figure}
+
+Además, el LTL permite expresar cómo evolucionan los estados a lo largo del tiempo en una ejecución y el CTL permite combinar cuantificadores de camino con operadores temporales.
 
 \subsubsection*{¿Cómo modelaría un fallo en el sensor de demanda (ej. sensor siempre activo)? ¿Qué propiedad se violaría?}
 
