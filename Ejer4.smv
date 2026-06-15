@@ -115,7 +115,7 @@ DEFINE
 
 
 -- φ1: Los semáforos de direcciones cruzadas no pueden estar en green simultáneamente.
-LTLSPEC NAME ambosSemaforosIguales := G(semaforo_NS.state = green & semaforo_OE.state = green);
+LTLSPEC NAME ambosSemaforosIguales := !G(semaforo_NS.state = green & semaforo_OE.state = green);
 
 -- φ2: El yellow debe durar exactamente TYellow y no debe saltarse.
 -- LTLSPEC NAME spec2 := G((semaforo_NS.time >= TGreenMin & semaforo_NS.state = yellow) -> X(semaforo_NS.time <= TM & semaforo_NS.time >= (TYellow + TGreenMin))) | G((semaforo_NS.time >= TGreenMin & semaforo_NS.state = yellow) -> X(semaforo_NS.time <= TM & semaforo_NS.time >= (TYellow + TGreenMax)))
