@@ -79,6 +79,54 @@
 }
 \lstset{style=mystyle}
 
+
+%%-------------------------------------
+%% Algorithms/Code NuSMV
+%%-------------------------------------
+
+% Definición de colores para el código
+\definecolor{nusmvComment}{rgb}{0.5,0.5,0.5}
+\definecolor{nusmvKeyword}{rgb}{0.0,0.0,0.6}
+\definecolor{nusmvString}{rgb}{0.6,0.0,0.0}
+
+% Creación del lenguaje NuSMV
+\lstdefinelanguage{NuSMV}{
+  morekeywords={
+    MODULE, VAR, ASSIGN, INIT, TRANS, INVAR, SPEC, CTLSPEC, LTLSPEC,
+    FAIRNESS, RUN, INVARSPEC, COMPUTE, NAME, OF, IN,
+    array, boolean, integer, real, process,
+    case, esac, for, while, if, then, else, self,
+    next, init, mod, union
+  },
+  sensitive=true,
+  morecomment=[l]{--},
+  morecomment=[n]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]'
+}
+
+% Estilo por defecto para el listado
+\lstdefinestyle{nusmvStyle}{
+  backgroundcolor=\color{white},
+  basicstyle=\ttfamily\footnotesize,
+  breakatwhitespace=false,         
+  breaklines=true,                 
+  captionpos=b,                    
+  commentstyle=\color{nusmvComment},
+  keywordstyle=\color{nusmvKeyword}\bfseries,
+  stringstyle=\color{nusmvString},
+  showspaces=false,                
+  showstringspaces=false,
+  showtabs=false,                  
+  tabsize=2,
+  language=NuSMV,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  stepnumber=1,
+  numbersep=5pt
+}
+
+
 %%-------------------------------------
 %% Graphics/Figures environment settings
 %%-------------------------------------
@@ -120,7 +168,7 @@
             filecolor=magenta,
             urlcolor=black,
             citecolor=DarkBlue,
-            pdftitle={Proyecto Integrador Ingeniería de Software II},
+            pdftitle={Trabajo de Laboratorio Semáforo Inteligente, Sistemas de Tiempo Real},
             }
 
 %%-------------------------------------
