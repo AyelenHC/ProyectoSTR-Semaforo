@@ -17,7 +17,8 @@ El modelado de todo el proyecto se realizó bajo las siguientes suposiciones ace
 Para resolver esta consigna, además de las suposiciones generales para todos los modelos, también se consideraron la siguientes suposiciones:
 \begin{enumerate}
     \item El tiempo máximo TM es la suma de los tiempos $T_{green}$ y $T_{yellow}$. Entonces un ciclo dura $TM = 10+3 = 13\ ticks$.
-    \item Nunca los semáforos de ambas calles estarán en rojo en simultáneo
+    \item Nunca los semáforos de ambas calles estarán en rojo simultáneamente.
+    \item Un auto, al cruzar el semáforo, permanece en la misma calle.
 \end{enumerate}
 
 \begin{lstlisting}[language=NuSMV]
@@ -853,23 +854,29 @@ CTLSPEC NAME tiempoEspMenor20 := AG (t_car_arrival <= 20);
 
 \textit{\textbf{Consigna:} Para el modelo final (con demanda y botón peatonal), medir el tiempo de verificación y el número de estados alcanzables usando el comando print reachable states en NuSMV. Comparar con el modelo cíclico fijo. Discutir la complejidad del espacio de estados.}
 
-Para el modelo inicial:
+\subsubsection*{Para el modelo inicial:}
 
-\begin{lstlisting}[language=NuSMV, caption={Resultado de ejecutar el comando \texttt{print\_reachable\_states}}, label=list:reachable_states]
-import numpy as np
-
-x  = [0, 1, 2, 3, 4, 5] # assign values to an array
-evenSum = evenSummation(x) # call a function
-
-def evenSummation(x):
-    evenSum = 0
-    n = len(x)
-    for i in range(n):
-        if np.mod(x[i],2) == 0: # check if a number is even?
-            evenSum = evenSum + x[i]
-    return evenSum
+\begin{lstlisting}[language=NuSMV, caption={Resultado de ejecutar el comando \texttt{print\_reachable\_states} para el modelo inicial}, label=list:reachable_states]
+###################################################################
+system diameter: 2
+reachable states: 4 (2^2) out of 3528 (2^11.7846)
+###################################################################
 \end{lstlisting}
 
+El resultado que muestra el comando \texttt{print\_reachable\_states}, indica que hay $4$ estados alcanzables y que hay $3528$ combinaciones posibles con la especificación del modelo inicial. El \texttt{system diameter = 2}, indica que todo estado alcanzable desde el estado inicial puede alcanzarse en a lo sumo $2$ transiciones.
+
+Esto es debido a la variable \texttt{cross}, ya que se encarga de realizar el cambio entre las direcciones \texttt{ns} y \texttt{oe}, solo teniendo en cuenta si el semáforo que tiene el paso llego al estado amarillo. Estableciendo que en el próximo estado se le otorga el paso al otro semáforo. Esto genera un ciclo predecible, que genera pocas configuraciones de estados durante la ejecución.
+
+\subsubsection*{Para el modelo Final:}
+
+\begin{lstlisting}[language=NuSMV, caption={Resultado de ejecutar el comando \texttt{print\_reachable\_states} para el modelo inicial}, label=list:reachable_states]
+###################################################################
+system diameter: 34
+reachable states: 13596 (2^13.7309) out of 2.01282e+08 (2^27.5846)
+###################################################################
+\end{lstlisting}
+
+El resultado indica que hay $13596$ estado alcanzables y que hay $2.01282e+08$ (es decir, $201{.}282{.}000$) combinaciones posibles con la especificación del modelo final. El system \texttt{diameter = 34}, indica que todo estado alcanzable desde el estado inicial puede alcanzarse en a lo sumo $34$ transiciones.
 
 %--------------------------------------------------------------------
 
@@ -901,11 +908,18 @@ Además, el LTL permite expresar cómo evolucionan los estados a lo largo del ti
 
 \subsubsection*{¿Cómo modelaría un fallo en el sensor de demanda (ej. sensor siempre activo)? ¿Qué propiedad se violaría?}
 
-Esto podría lograrse agregando una variable \texttt{sensorFail : boolean} que de manera no determinística modele un fallo en el sensor. Luego, en la condición para cambiar el estado del semáforo de \texttt{green} a \texttt{yellow}, modificaría la condición que determina si el semáforo permanece en \texttt{green} si \texttt{demand \& !sensorFail}, para que el semáforo permanezca en \texttt{green}.
+Podríamos hacer uso de una variable \texttt{autosCant : Int}, que sea un registro de la cantidad de autos que pasan por la calle del semáforo actual; de esta manera se puede identificar un fallo en caso de que:
 
-De esta manera, independientemente de si hay verdaderamente demanda o no (para un cruce particular), si hay falla de sensor, entonces el semáforo no considera extenderse por demanda.
+\begin{itemize}
+    \item Si el sensor de demanda se mantiene en \texttt{false}, y \texttt{autosCant} se mantiene en aumento, podremos identificar un fallo del sensor de demanda.
+    \item Si el sensor de demanda se mantiene en true, el semáforo de esa misma calle está en verde, y \texttt{autosCant} no aumenta, identificando así un fallo en el sensor.
+\end{itemize}
 
-Considerando de que nos estamos refiriendo a las propiedades especificadas para esta actividad, y no las propiedaes de \textit{safety}, \textit{liveness} y \textit{fairness},inguna propiedad se violaría, siguiendo el modelo completo y el agregando la variable \texttt{sensorFail : boolean}, debido a que:
+Además, es necesario agregar una nueva variable \texttt{sensorFail : boolean} que determine si alguna de las dos condiciones mencionadas se cumple. Luego, al momento de la comprobación de demanda, para mantener el semáforo en \texttt{green}, la condición se cambiará a que sea sí \texttt{demand \& !sensorFail}.
+
+De esta manera, independientemente de si hay verdaderamente demanda o no para un cruce en particular, si hay falla de sensor, entonces el semáforo no considera extenderse por demanda.\\
+
+Luego, considerando de que nos estamos refiriendo a las propiedades especificadas para esta actividad, y no las propiedaes de \textit{safety}, \textit{liveness} y \textit{fairness}, ninguna propiedad se violaría, siguiendo el modelo completo y el agregando la variable \texttt{sensorFail : boolean}, debido a que:
 
 \begin{enumerate}
     \item La propiedad $\phi_1$ se mantiene ya que este modelo no permite semáforos en verde en simultáneo. Cuando falla un sensor de un semáforo, el semáforo actúa con su tiempo mínimo siempre.
