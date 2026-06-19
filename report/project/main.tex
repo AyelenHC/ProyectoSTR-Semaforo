@@ -1,0 +1,91 @@
+% -------------------------------------------------------------------
+% Document setup
+% -------------------------------------------------------------------
+\documentclass[a4paper,12pt,oneside,spanish]{book}
+\usepackage{babel}
+\usepackage{styles}
+\usepackage{tabularx}
+\usepackage{titlesec}
+\usepackage{float}
+
+\titleformat{\section}[block]
+  {\bfseries\Large}
+  {}
+  {0pt}
+  {} % título sin adornos
+  [\vspace{0.3ex}\titlerule]
+
+\begin{document}
+
+    \frontmatter
+    
+    \begin{titlepage}
+        \begin{center}
+            
+            \begin{center}
+                \includegraphics[width=2cm]{../resources/UNSL.png}\hspace{1cm}%
+                \includegraphics[width=2cm]{../resources/Dpto Informática.png}
+            \end{center}
+            \vspace{1cm}
+            {\LARGE Universidad Nacional de San Luis\\[0.5cm]
+            Departamento de Informática\\[1.2cm]
+            }
+            \linespread{1.2}\huge{
+
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % Project Title
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                \textbf{\textit{Trabajo de Laboratorio\\Sistemas de Tiempo Real}}
+                \bigbreak%
+
+                \textit{Semáforo Inteligente}
+                
+            }
+            \linespread{1}~\\[1.2cm]
+            
+            {\Large
+               
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                % Authors
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                
+                \bigbreak%
+                Ayelen Yanina Humerez Colque\\
+                Facundo Nicolás Farias Lozano\\
+                Giuliano Agustin Carbone\\
+                Juan Cruz Paez\\
+            }
+            
+            \linespread{1}~\\[1.2cm]
+
+            {\large
+                \emph{Profesores:}\\
+                    Prof. Alejandro Sánchez
+                    
+                \emph{Ingeniería en Informática}\\
+
+                
+                \emph{2026}
+            }
+            
+
+            \date{2025}
+        \end{center}
+    \end{titlepage}
+    \pagestyle{plain}
+
+    
+    % -------------------------------------------------------------------
+    % Contents
+    % -------------------------------------------------------------------
+    % \tableofcontent
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%  Main chapters and sections                                        %%  
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \mainmatter%
+    
+    \input{../chapters/actividades.tex}
+    % \input{../chapters/utilities.tex}
+    
+
+\end{document}
